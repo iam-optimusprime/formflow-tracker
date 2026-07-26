@@ -28,7 +28,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
+      - name: Display Version
+        run: |
+          node --version
+          npm --version
+          
       #################################################
       # Backend
       #################################################
