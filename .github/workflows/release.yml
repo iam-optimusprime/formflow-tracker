@@ -36,6 +36,15 @@ jobs:
       # Verify Docker Secrets
       #################################################
 
+      - name: Check Repository Secrets
+        env:
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          HOST: ${{ secrets.VM_HOST }}
+        run: |
+          echo "Docker username length: ${#USERNAME}"
+          echo "VM host length: ${#HOST}"
+
+
       - name: Verify Docker Secrets
         env:
           DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
