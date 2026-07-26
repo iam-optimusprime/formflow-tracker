@@ -16,11 +16,13 @@ echo "$(date)"
 echo "Docker Cleanup Started"
 echo "========================================"
 
-docker image prune -f
+docker image prune -af
 
-docker builder prune -f
+docker builder prune -af
 
 docker container prune -f
+
+docker volume prune -f
 
 echo "Cleanup Complete"
 

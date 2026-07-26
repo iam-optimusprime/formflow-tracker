@@ -56,6 +56,16 @@ sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env
 echo "Updated IMAGE_TAG to ${IMAGE_TAG}"
 
 ########################################
+# Pre-Deployment Cleanup
+########################################
+
+echo "Cleaning unused Docker resources before deployment..."
+
+docker image prune -af
+
+docker builder prune -af
+
+########################################
 # Pull Images
 ########################################
 
