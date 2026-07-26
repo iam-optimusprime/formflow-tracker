@@ -463,3 +463,5 @@ Potential enhancements include:
 # License
 
 This project was developed for educational purposes as part of a Cloud & DevOps Engineering Capstone Project.
+
+TESTING PHASE..... 80%
