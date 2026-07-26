@@ -33,6 +33,34 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       #################################################
+      # Verify Docker Secrets
+      #################################################
+
+      - name: Verify Docker Secrets
+        env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+        run: |
+         echo "Checking Docker secrets..."
+
+         if [ -z "$DOCKER_USER" ]; then
+           echo "❌ DOCKERHUB_USERNAME is EMPTY"
+           exit 1
+         else
+           echo "✅ Username exists"
+           echo "Length: ${#DOCKER_USER}"
+         fi
+
+         if [ -z "$DOCKER_TOKEN" ]; then
+           echo "❌ DOCKERHUB_TOKEN is EMPTY"
+           exit 1
+         else
+           echo "✅ Token exists"
+           echo "Length: ${#DOCKER_TOKEN}"
+         fi
+
+      #################################################
       # Docker Login
       #################################################
 
