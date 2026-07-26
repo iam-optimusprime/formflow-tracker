@@ -1,0 +1,31 @@
+# Node
+node_modules/
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Coverage
+coverage/
+
+# Build output
+dist/
+build/
+
+# Docker
+*.pid

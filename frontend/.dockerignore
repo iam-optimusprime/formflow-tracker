@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Build outputs
+.next
+out
+
+# Version control
+.git
+.gitignore
+
+# Environment files
+.env
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+Dockerfile
+.dockerignore
+README.md
+LICENSE
+.gitattributes
+.nyc_output
+coverage
+__tests__
+jest.config.js
+tsconfig.tsbuildinfo
