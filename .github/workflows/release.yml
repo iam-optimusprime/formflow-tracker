@@ -1,189 +1,184 @@
 name: Release & Deploy
 
 on:
-  push:
-    tags:
-      - "v*"
+    push:
+        tags:
+            - "v*"
 
 jobs:
+    release:
+        runs-on: ubuntu-latest
 
-  release:
+        environment: production
 
-    runs-on: ubuntu-latest
+        permissions:
+            contents: read
 
-    environment: production
+        steps:
+            ##################################################
+            # Checkout
+            ##################################################
 
-    permissions:
-      contents: read
+            - name: Checkout Repository
+              uses: actions/checkout@v4
 
-    steps:
+            ##################################################
+            # Docker Buildx
+            ##################################################
 
-      #################################################
-      # Checkout
-      #################################################
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+            ##################################################
+            # Verify Docker Secrets
+            ##################################################
+            - name: Verify Docker Secrets
+              env:
+                  DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+                  DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      #################################################
-      # Docker Buildx
-      #################################################
+              run: |
+                  echo "Checking Docker secrets..."
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+                  if [ -z "$DOCKER_USER" ]; then
+                    echo "❌ DOCKERHUB_USERNAME is EMPTY"
+                    exit 1
+                  else
+                    echo "✅ Username exists"
+                    echo "Length: ${#DOCKER_USER}"
+                  fi
 
-      #################################################
-      # Verify Docker Secrets
-      #################################################
-      - name: Verify Docker Secrets
-        env:
-          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+                  if [ -z "$DOCKER_TOKEN" ]; then
+                    echo "❌ DOCKERHUB_TOKEN is EMPTY"
+                    exit 1
+                  else
+                    echo "✅ Token exists"
+                    echo "Length: ${#DOCKER_TOKEN}"
+                  fi
 
-        run: |
-         echo "Checking Docker secrets..."
+            ##################################################
+            # Docker Login
+            ##################################################
 
-         if [ -z "$DOCKER_USER" ]; then
-           echo "❌ DOCKERHUB_USERNAME is EMPTY"
-           exit 1
-         else
-           echo "✅ Username exists"
-           echo "Length: ${#DOCKER_USER}"
-         fi
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-         if [ -z "$DOCKER_TOKEN" ]; then
-           echo "❌ DOCKERHUB_TOKEN is EMPTY"
-           exit 1
-         else
-           echo "✅ Token exists"
-           echo "Length: ${#DOCKER_TOKEN}"
-         fi
+            ##################################################
+            # Backend Metadata
+            ##################################################
 
-      #################################################
-      # Docker Login
-      #################################################
+            - name: Backend Docker Metadata
+              id: backend-meta
+              uses: docker/metadata-action@v5
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+              with:
+                  images: osarietinmen/formflow-backend
 
-      #################################################
-      # Backend Metadata
-      #################################################
+                  tags: |
+                      type=raw,value=${{ github.ref_name }}
+                      type=raw,value=latest
 
-      - name: Backend Docker Metadata
-        id: backend-meta
-        uses: docker/metadata-action@v5
+            ##################################################
+            # Frontend Metadata
+            ##################################################
 
-        with:
-          images: osarietinmen/formflow-backend
+            - name: Frontend Docker Metadata
+              id: frontend-meta
+              uses: docker/metadata-action@v5
 
-          tags: |
-            type=raw,value=${{ github.ref_name }}
-            type=raw,value=latest
+              with:
+                  images: osarietinmen/formflow-frontend
 
-      #################################################
-      # Frontend Metadata
-      #################################################
+                  tags: |
+                      type=raw,value=${{ github.ref_name }}
+                      type=raw,value=latest
 
-      - name: Frontend Docker Metadata
-        id: frontend-meta
-        uses: docker/metadata-action@v5
+            ##################################################
+            # Build Backend
+            ##################################################
 
-        with:
-          images: osarietinmen/formflow-frontend
+            - name: Build & Push Backend
+              uses: docker/build-push-action@v6
 
-          tags: |
-            type=raw,value=${{ github.ref_name }}
-            type=raw,value=latest
+              with:
+                  context: ./backend
 
-      #################################################
-      # Build Backend
-      #################################################
+                  push: true
 
-      - name: Build & Push Backend
-        uses: docker/build-push-action@v6
+                  tags: ${{ steps.backend-meta.outputs.tags }}
 
-        with:
-          context: ./backend
+                  labels: ${{ steps.backend-meta.outputs.labels }}
 
-          push: true
+                  cache-from: type=gha
 
-          tags: ${{ steps.backend-meta.outputs.tags }}
+                  cache-to: type=gha,mode=max
 
-          labels: ${{ steps.backend-meta.outputs.labels }}
+            ##################################################
+            # Build Frontend
+            ##################################################
 
-          cache-from: type=gha
+            - name: Build & Push Frontend
+              uses: docker/build-push-action@v6
 
-          cache-to: type=gha,mode=max
+              with:
+                  context: ./frontend
 
-      #################################################
-      # Build Frontend
-      #################################################
+                  push: true
 
-      - name: Build & Push Frontend
-        uses: docker/build-push-action@v6
+                  tags: ${{ steps.frontend-meta.outputs.tags }}
 
-        with:
-          context: ./frontend
+                  labels: ${{ steps.frontend-meta.outputs.labels }}
 
-          push: true
+                  cache-from: type=gha
 
-          tags: ${{ steps.frontend-meta.outputs.tags }}
+                  cache-to: type=gha,mode=max
 
-          labels: ${{ steps.frontend-meta.outputs.labels }}
+            ##################################################
+            # Deploy
+            ##################################################
 
-          cache-from: type=gha
+            - name: Deploy to Azure VM
 
-          cache-to: type=gha,mode=max
+              uses: appleboy/ssh-action@v1.0.3
 
-      #################################################
-      # Deploy
-      #################################################
+              with:
+                  host: ${{ secrets.VM_HOST }}
 
-      - name: Deploy to Azure VM
+                  username: ${{ secrets.VM_USERNAME }}
 
-        uses: appleboy/ssh-action@v1.0.3
+                  key: ${{ secrets.VM_SSH_KEY }}
 
-        with:
+                  script: |
 
-          host: ${{ secrets.VM_HOST }}
+                      cd ~/formflow-tracker
 
-          username: ${{ secrets.VM_USERNAME }}
+                      ./deployment/deploy.sh "${{ github.ref_name }}"
 
-          key: ${{ secrets.VM_SSH_KEY }}
+            ##################################################
+            # Health Check
+            ##################################################
+            - name: Verify Deployment
 
-          script: |
+              uses: appleboy/ssh-action@v1.0.3
 
-            cd ~/formflow-tracker
+              with:
+                  host: ${{ secrets.VM_HOST }}
 
-            ./deployment/deploy.sh "${{ github.ref_name }}"
+                  username: ${{ secrets.VM_USERNAME }}
 
-      #################################################
-      # Health Check
-      #################################################
-      - name: Verify Deployment
+                  key: ${{ secrets.VM_SSH_KEY }}
 
-        uses: appleboy/ssh-action@v1.0.3
+                  script: |
 
-        with:
+                      curl --fail http://localhost:5000/api/health
 
-          host: ${{ secrets.VM_HOST }}
+            ##################################################
+            # Deployment Summary
+            ##################################################
 
-          username: ${{ secrets.VM_USERNAME }}
-
-          key: ${{ secrets.VM_SSH_KEY }}
-
-          script: |
-
-            curl --fail http://localhost:5000/api/health
-
-      #################################################
-      # Deployment Summary
-      #################################################
-
-      - name: Deployment Summary
-        run: |
-          echo "Deployment completed successfully."
+            - name: Deployment Summary
+              run: |
+                  echo "Deployment completed successfully."
