@@ -1,10 +1,18 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
+
+LOG_DIR="$HOME/logs"
+
+mkdir -p "$LOG_DIR"
+
+LOG_FILE="$LOG_DIR/healthcheck.log"
+
+exec >>"$LOG_FILE" 2>&1
 
 BACKEND_URL="http://localhost:5000/api/health"
 
-echo "Running backend health check..."
+echo "$(date) Checking Backend Health..."
 
 HTTP_STATUS=$(curl \
     --silent \
@@ -13,10 +21,13 @@ HTTP_STATUS=$(curl \
     "$BACKEND_URL")
 
 if [ "$HTTP_STATUS" -eq 200 ]; then
-    echo "Backend is healthy."
+
+    echo "Backend Healthy"
+
     exit 0
+
 fi
 
-echo "Backend health check failed."
+echo "Backend Unhealthy"
 
 exit 1
